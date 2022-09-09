@@ -1,11 +1,14 @@
 package com.example.lesson10networkandscrolledlist
 
+import android.graphics.Rect
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import com.example.lesson10networkandscrolledlist.databinding.FragmentFirstBinding
 import com.google.android.material.divider.MaterialDividerItemDecoration
 import retrofit2.*
@@ -17,6 +20,8 @@ class FragmentFirst : Fragment() {
     private val binding get() = requireNotNull(_binding)
 
     private val adapter by lazy { UserAdapter(requireContext()) }
+
+    var currentUsers = mutableListOf<User>()
 
     private var currentRequest: Call<List<User>>? = null
 
@@ -36,7 +41,35 @@ class FragmentFirst : Fragment() {
         with(binding) {
             recyclerView.adapter = adapter
             recyclerView.addItemDecoration(
-                MaterialDividerItemDecoration(requireContext(), MaterialDividerItemDecoration.VERTICAL))
+                object : RecyclerView.ItemDecoration() {
+                    override fun getItemOffsets(
+                        outRect: Rect,
+                        view: View,
+                        parent: RecyclerView,
+                        state: RecyclerView.State
+                    ) {
+                        outRect.bottom = INTERVAL_BETWEEN_ITEMS
+                    }
+                }
+//                MaterialDividerItemDecoration(requireContext(), MaterialDividerItemDecoration.VERTICAL)
+            )
+
+            //for processing of search menu toolbar
+            toolbar
+                .menu
+                .findItem(R.id.action_search)
+                .actionView
+                .let { it as SearchView }
+                .setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+                    override fun onQueryTextSubmit(query: String): Boolean {
+                        return false
+                    }
+
+                    override fun onQueryTextChange(query: String): Boolean {
+                        adapter.submitList(currentUsers.filter { it.login.contains(query) })
+                        return true
+                    }
+                })
         }
         //                toolbar.menu
 //                toolbar.inflateMenu(R.menu.menu_toolbar) //for processing menu toolbar
@@ -52,21 +85,7 @@ class FragmentFirst : Fragment() {
 //                    false
 //                }
 //            }
-        //for processing of search menu toolbar
-//            toolbar
-//                .menu
-//                .findItem(R.id.action_search)
-//                .actionView
-//                .let { it as SearchView }
-//                .setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-//                    override fun onQueryTextSubmit(query: String?): Boolean {
-//                        TODO("Not yet implemented")
-//                    }
-//
-//                    override fun onQueryTextChange(newText: String?): Boolean {
-//                        TODO("Not yet implemented")
-//                    }
-//                })
+
 
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.github.com/")
@@ -82,6 +101,7 @@ class FragmentFirst : Fragment() {
                     override fun onResponse(call: Call<List<User>>, response: Response<List<User>>) {
                         if (response.isSuccessful) {
                             val users = response.body() ?: return
+                            currentUsers.addAll(users)
                             adapter.submitList(users)
                         } else {
                             handleException(HttpException(response))
@@ -105,5 +125,8 @@ class FragmentFirst : Fragment() {
 
     private fun handleException(e: Throwable) {
         Toast.makeText(requireContext(), e.message ?: "Something went wrong", Toast.LENGTH_SHORT).show()
+    }
+    companion object {
+        val INTERVAL_BETWEEN_ITEMS = 50
     }
 }
