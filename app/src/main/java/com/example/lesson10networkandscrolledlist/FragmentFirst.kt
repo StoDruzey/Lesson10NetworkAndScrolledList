@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.lesson10networkandscrolledlist.databinding.FragmentFirstBinding
+import com.google.android.material.divider.MaterialDividerItemDecoration
 import retrofit2.*
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -34,6 +35,8 @@ class FragmentFirst : Fragment() {
 
         with(binding) {
             recyclerView.adapter = adapter
+            recyclerView.addItemDecoration(
+                MaterialDividerItemDecoration(requireContext(), MaterialDividerItemDecoration.VERTICAL))
         }
         //                toolbar.menu
 //                toolbar.inflateMenu(R.menu.menu_toolbar) //for processing menu toolbar
