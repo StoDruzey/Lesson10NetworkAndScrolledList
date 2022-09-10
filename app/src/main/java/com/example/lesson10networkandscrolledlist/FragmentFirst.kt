@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.SearchView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.lesson10networkandscrolledlist.databinding.FragmentFirstBinding
 import com.google.android.material.divider.MaterialDividerItemDecoration
@@ -19,7 +20,14 @@ class FragmentFirst : Fragment() {
     private var _binding: FragmentFirstBinding? = null
     private val binding get() = requireNotNull(_binding)
 
-    private val adapter by lazy { UserAdapter(requireContext()) }
+    private val adapter by lazy {
+        UserAdapter(
+            context = requireContext(),
+            onUserClicked = {
+                findNavController().navigate(FragmentFirstDirections.actionFragmentFirstToFragmentSecond(it.login))
+            }
+        )
+    }
 
     var currentUsers = mutableListOf<User>()
 
@@ -55,21 +63,21 @@ class FragmentFirst : Fragment() {
             )
 
             //for processing of search menu toolbar
-            toolbar
-                .menu
-                .findItem(R.id.action_search)
-                .actionView
-                .let { it as SearchView }
-                .setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                    override fun onQueryTextSubmit(query: String): Boolean {
-                        return false
-                    }
-
-                    override fun onQueryTextChange(query: String): Boolean {
-                        adapter.submitList(currentUsers.filter { it.login.contains(query) })
-                        return true
-                    }
-                })
+//            toolbar
+//                .menu
+//                .findItem(R.id.action_search)
+//                .actionView
+//                .let { it as SearchView }
+//                .setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+//                    override fun onQueryTextSubmit(query: String): Boolean {
+//                        return false
+//                    }
+//
+//                    override fun onQueryTextChange(query: String): Boolean {
+//                        adapter.submitList(currentUsers.filter { it.login.contains(query) })
+//                        return true
+//                    }
+//                })
         }
         //                toolbar.menu
 //                toolbar.inflateMenu(R.menu.menu_toolbar) //for processing menu toolbar
@@ -102,7 +110,8 @@ class FragmentFirst : Fragment() {
                         if (response.isSuccessful) {
                             val users = response.body() ?: return
                             currentUsers.addAll(users)
-                            adapter.submitList(users)
+                            val items = users.map { PagingData.Item(it) } + PagingData.Loading
+                            adapter.submitList(items)
                         } else {
                             handleException(HttpException(response))
                         }
