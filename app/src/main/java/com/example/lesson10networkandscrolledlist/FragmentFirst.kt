@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
+import coil.Coil.enqueue
 import com.example.lesson10networkandscrolledlist.databinding.FragmentFirstBinding
 import com.google.android.material.divider.MaterialDividerItemDecoration
 import retrofit2.*
@@ -47,6 +48,23 @@ class FragmentFirst : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         with(binding) {
+
+            swipeRefresh.setOnRefreshListener {
+                executeRequest {
+                    swipeRefresh.isRefreshing = false
+                }
+            }
+
+            recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    super.onScrollStateChanged(recyclerView, newState)
+                }
+
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+                }
+            })
+
             recyclerView.adapter = adapter
             recyclerView.addItemDecoration(
                 object : RecyclerView.ItemDecoration() {
@@ -79,6 +97,8 @@ class FragmentFirst : Fragment() {
 //                    }
 //                })
         }
+
+        executeRequest()
         //                toolbar.menu
 //                toolbar.inflateMenu(R.menu.menu_toolbar) //for processing menu toolbar
 //                toolbar.setNavigationOnClickListener {
@@ -93,16 +113,25 @@ class FragmentFirst : Fragment() {
 //                    false
 //                }
 //            }
+    }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        currentRequest?.cancel()
+        _binding = null
+    }
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.github.com/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
+    private fun executeRequest(
+        onRequestFinished: () -> Unit = {}
+    ) {
 
-        val githubApi = retrofit.create<GithubApi>()
+       val finishRequest = {
+           onRequestFinished()
+           currentRequest = null
+       }
 
-        currentRequest = githubApi
+        currentRequest?.cancel()
+        currentRequest = GithubService.api
             .getUsers(10, 50)
             .apply {
                 enqueue(object : Callback<List<User>> {
@@ -115,21 +144,17 @@ class FragmentFirst : Fragment() {
                         } else {
                             handleException(HttpException(response))
                         }
+                        finishRequest()
                     }
 
                     override fun onFailure(call: Call<List<User>>, t: Throwable) {
                         if (!call.isCanceled) {
                             handleException(t)
                         }
+                        finishRequest()
                     }
                 })
             }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        currentRequest?.cancel()
-        _binding = null
     }
 
     private fun handleException(e: Throwable) {
