@@ -33,6 +33,7 @@ class FragmentFirst : Fragment() {
     var currentUsers = mutableListOf<User>()
 
     private var currentRequest: Call<List<User>>? = null
+    private var currentPage = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
